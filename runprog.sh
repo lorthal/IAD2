@@ -76,7 +76,6 @@ eval set -- "$PARAMS"
 
 echo $PARAMS
 
-echo ""$programpath" "$epochs" "$neurons" "$learningRate" "$sigma" "$method" "$outputFilename" "$shape""
+# echo "$programpath" "$epochs" "$neurons" "$learningRate" "$sigma" "$method" "$outputFilename" "$shape"
 
-"$programpath" $epochs $neurons $learningRate $sigma "$method" "$outputFilename" "$shape"
-
+"$programpath" $epochs $neurons $learningRate $sigma $method $outputFilename $shape
