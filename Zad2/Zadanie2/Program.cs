@@ -22,14 +22,17 @@ class Program
 
         ParseArgs(args);
 
-        GnuPlot.Set("xrange[-10:10]", "yrange[-10:10]", "size square"/*, "terminal gif animate delay 5"*/, "output 'output.gif'");
-
         foreach (var shape in shapes)
         {
             Helper.SetShape(shape.shape, shape.args);
         }
 
-        Helper.PlotPoints(Helper.ShapePoints, "with points pt '+' lc rgb 'black'", Helper.outputPath + "shape.txt");
+        if (Helper.Plot)
+        {
+            GnuPlot.Set("", "xrange[-10:10]", "yrange[-10:10]", "size square"/*, "terminal gif animate delay 5"*/,
+                $"output '{Helper.outputPath}{Helper.outputFilename.Replace(".txt", ".gif")}'");
+            Helper.PlotPoints(Helper.ShapePoints, "with points pt '+' lc rgb 'black'", Helper.outputPath + "shape.txt");
+        }
 
         Network network = new Network(Helper.ShapePoints, epochs, neurons, learningRate, sigma0, method);
         network.Learn();
@@ -41,6 +44,7 @@ class Program
         {
             case 0:
                 break;
+            default:
             case 6:
                 Helper.outputFilename = args[5];
                 goto case 5;
@@ -70,6 +74,11 @@ class Program
             case 1:
                 epochs = int.Parse(args[0]);
                 break;
+        }
+
+        if (args.Length > 6)
+        {
+            shapes.Clear();
         }
 
         for (int i = 6; i < args.Length;)

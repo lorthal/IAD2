@@ -23,6 +23,7 @@ public class Helper
 
     public const string outputPath = "D:\\Semestr 6\\IAD\\Zad2Res\\";
     public static string outputFilename = "output.txt";
+    public static bool Plot = false;
 
     public static List<Point> ShapePoints = new List<Point>();
 

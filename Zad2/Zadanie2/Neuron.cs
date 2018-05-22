@@ -12,10 +12,13 @@ public class Neuron
 
     public double Potential { get; private set; }
 
-    private readonly double minPotential;
+    public bool Used { get; set; }
 
+    private readonly double minPotential;
+    
     public Neuron(Point position, IntPoint coord, double minPotential)
     {
+        Used = false;
         Weights = new List<double>();
         Position = position;
         Coord = coord;
@@ -32,6 +35,7 @@ public class Neuron
 
     public void UpdataWeights(Point point, double learningRate, double influence)
     {
+        Used = true;
         double[] prevWeights = Weights.ToArray();
 
         for (int i = 0; i < Weights.Count; i++)
@@ -43,9 +47,13 @@ public class Neuron
 
     public void UpdatePotential(Neuron bmu, int neuronCount)
     {
-        if (bmu == this)
+        if (bmu == this && Potential > 0)
         {
             Potential -= minPotential;
+            if (Potential < 0)
+            {
+                Potential = 0;
+            }
         }
         else if (Potential < 1)
         {

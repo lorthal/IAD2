@@ -33,7 +33,7 @@ public class Network
         this.startingLearningRate = learningRate;
         this.sigma = sigma0;
         this.method = method;
-        this.minPotential = 0.75;
+        this.minPotential = 0.5;
         lambda = epochs / Math.Log(sigma);
 
         if (method == Method.NeuralGas)
@@ -128,11 +128,17 @@ public class Network
 
             foreach (var neuron in potentialNeurons)
             {
+                double distanceToNeuronSq =
+                    Helper.SquaredEuclideanDistance(new double[]{potentialNeurons.IndexOf(neuron)}, new double[] { potentialNeurons.IndexOf(bmu) });
+
                 double widthSq = neighbourhoodRadius * neighbourhoodRadius;
 
-                double influence = Math.Exp(-potentialNeurons.IndexOf(neuron) / (2 * widthSq));
+                if (distanceToNeuronSq < widthSq)
+                {
+                    double influence = Math.Exp(-potentialNeurons.IndexOf(neuron) / (2 * widthSq));
 
-                neuron.UpdataWeights(Inputs[index], learningRate, influence);
+                    neuron.UpdataWeights(Inputs[index], learningRate, influence);
+                }
             }
 
             foreach (var neuron in neurons)
@@ -147,12 +153,16 @@ public class Network
 
     private void DisplayData(int epoch)
     {
-        Helper.PlotPoints(GetNeuronsPositions(), 
-            string.Format("title sprintf('epoch={0}') lc rgb 'red', '{1}shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", epoch,Helper.outputPath));
+        if (Helper.Plot)
+        {
+            Helper.PlotPoints(GetNeuronsPositions(), 
+                string.Format("title sprintf('epoch={0}') lc rgb 'red', '{1}shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", epoch,Helper.outputPath));
+        }
 
         double error = CalculateError();
+        double unusedNeurons = neurons.FindAll(n => !n.Used).ToArray().Length;
 
-        Console.WriteLine("Epoch " + epoch + " error: " + error);
+        Console.WriteLine("Epoch " + epoch + " error: " + error + ", unused neurons: " + unusedNeurons);
 
         if (!File.Exists(Helper.outputPath + Helper.outputFilename))
         {
@@ -160,7 +170,12 @@ public class Network
         }
         using (var stream = File.AppendText(Helper.outputPath + Helper.outputFilename))
         {
-            stream.WriteLine("{0} {1}", epoch, error);
+            stream.WriteLine("{0} {1} {2}", epoch, error, unusedNeurons);
+        }
+
+        foreach (var neuron in neurons)
+        {
+            neuron.Used = false;
         }
     }
 
