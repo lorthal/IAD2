@@ -45,11 +45,11 @@ public class Neuron
     {
         if (bmu == this)
         {
-            Potential = Potential - minPotential;
+            Potential -= minPotential;
         }
         else if (Potential < 1)
         {
-            Potential = Potential + 1 / (double) neuronCount;
+            Potential += 1 / (double) neuronCount;
             if (Potential > 1)
             {
                 Potential = 1;

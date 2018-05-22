@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -39,18 +40,19 @@ public class Network
         {
             for (int i = 0; i < neuronsCount; i++)
             {
-
                 neurons.Add(new Neuron(Helper.GenerateRandomPoint(-10, 10), new IntPoint(0, 0), minPotential));
             }
         }
         else
         {
-            //int neuronCountSq = (int)Math.Round(Math.Sqrt(neuronsCount));
-            for (int i = 0; i < 10; i++)
+            int neuronsAdded = 0;
+            int neuronCountSq = (int)Math.Round(Math.Sqrt(neuronsCount));
+            for (int i = 0; neuronsAdded < neuronsCount; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < neuronCountSq && neuronsAdded < neuronsCount; j++)
                 {
                     neurons.Add(new Neuron(Helper.GenerateRandomPoint(-10, 10), new IntPoint(i, j), minPotential));
+                    neuronsAdded++;
                 }
             }
         }
@@ -85,26 +87,27 @@ public class Network
 
             double neighbourhoodRadius = sigma * Math.Exp(-(double)i / lambda);
 
-            foreach (var neuron in neurons.FindAll(n => n.Potential > minPotential))
+            foreach (var neuron in neurons)
             {
-                double distanceToNeuronSq =
-                    Helper.SquaredEuclideanDistance(neuron.Coord.ToArray(), bmu.Coord.ToArray());
-
-                double widthSq = neighbourhoodRadius * neighbourhoodRadius;
-
-                if (distanceToNeuronSq < widthSq)
+                if (neuron.Potential > minPotential)
                 {
-                    double influence = Math.Exp(-distanceToNeuronSq / (2 * widthSq));
+                    double distanceToNeuronSq =
+                        Helper.SquaredEuclideanDistance(neuron.Coord.ToArray(), bmu.Coord.ToArray());
 
-                    neuron.UpdataWeights(Inputs[index], learningRate, influence);
+                    double widthSq = neighbourhoodRadius * neighbourhoodRadius;
+
+                    if (distanceToNeuronSq < widthSq)
+                    {
+                        double influence = Math.Exp(-distanceToNeuronSq / (2 * widthSq));
+
+                        neuron.UpdataWeights(Inputs[index], learningRate, influence);
+                    }
                 }
 
                 neuron.UpdatePotential(bmu, neurons.Count);
             }
-
-            Helper.PlotPoints(GetNeuronsPositions(), string.Format("title sprintf('epoch={0}') lc rgb 'red', 'shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", i));
-            Console.WriteLine("Epoch: " + i);
             learningRate = startingLearningRate * Math.Exp(-(double)i / epochs);
+            DisplayData(i);
         }
     }
 
@@ -127,23 +130,55 @@ public class Network
             {
                 double widthSq = neighbourhoodRadius * neighbourhoodRadius;
 
-
                 double influence = Math.Exp(-potentialNeurons.IndexOf(neuron) / (2 * widthSq));
 
                 neuron.UpdataWeights(Inputs[index], learningRate, influence);
+            }
 
+            foreach (var neuron in neurons)
+            {
                 neuron.UpdatePotential(bmu, neurons.Count);
             }
 
-            Helper.PlotPoints(GetNeuronsPositions(), string.Format("title sprintf('epoch={0}') lc rgb 'red', 'shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", i));
-            Console.WriteLine("Epoch: " + i);
             learningRate = startingLearningRate * Math.Exp(-(double)i / epochs);
+            DisplayData(i);
         }
+    }
+
+    private void DisplayData(int epoch)
+    {
+        Helper.PlotPoints(GetNeuronsPositions(), 
+            string.Format("title sprintf('epoch={0}') lc rgb 'red', '{1}shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", epoch,Helper.outputPath));
+
+        double error = CalculateError();
+
+        Console.WriteLine("Epoch " + epoch + " error: " + error);
+
+        if (!File.Exists(Helper.outputPath + Helper.outputFilename))
+        {
+            using (var fs = File.Create(Helper.outputPath + Helper.outputFilename)) { }
+        }
+        using (var stream = File.AppendText(Helper.outputPath + Helper.outputFilename))
+        {
+            stream.WriteLine("{0} {1}", epoch, error);
+        }
+    }
+
+    private double CalculateError()
+    {
+        double sum = 0;
+
+        for (int i = 0; i < Inputs.Count; i++)
+        {
+            Neuron best = FindBMU(Inputs[i]);
+            sum += Helper.SquaredEuclideanDistance(Inputs[i].ToArray(), best.Position.ToArray());
+        }
+
+        return (1 / (double)Inputs.Count) * sum;
     }
 
     public void Learn()
     {
-
         switch (method)
         {
             case Method.Kohonen:
@@ -151,8 +186,6 @@ public class Network
                 break;
             case Method.NeuralGas:
                 NeuralGas();
-                break;
-            default:
                 break;
         }
     }
