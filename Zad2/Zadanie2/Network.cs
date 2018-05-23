@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 public class Network
 {
@@ -41,6 +42,7 @@ public class Network
             for (int i = 0; i < neuronsCount; i++)
             {
                 neurons.Add(new Neuron(Helper.GenerateRandomPoint(-10, 10), new IntPoint(0, 0), minPotential));
+                Thread.Sleep(50);
             }
         }
         else
@@ -52,6 +54,7 @@ public class Network
                 for (int j = 0; j < neuronCountSq && neuronsAdded < neuronsCount; j++)
                 {
                     neurons.Add(new Neuron(Helper.GenerateRandomPoint(-10, 10), new IntPoint(i, j), minPotential));
+                    Thread.Sleep(50);
                     neuronsAdded++;
                 }
             }
@@ -107,7 +110,8 @@ public class Network
                 neuron.UpdatePotential(bmu, neurons.Count);
             }
             learningRate = startingLearningRate * Math.Exp(-(double)i / epochs);
-            DisplayData(i);
+            //DisplayData(i);
+            PlotVector();
         }
     }
 
@@ -129,7 +133,7 @@ public class Network
             foreach (var neuron in potentialNeurons)
             {
                 double distanceToNeuronSq =
-                    Helper.SquaredEuclideanDistance(new double[]{potentialNeurons.IndexOf(neuron)}, new double[] { potentialNeurons.IndexOf(bmu) });
+                    Helper.SquaredEuclideanDistance(new double[] { potentialNeurons.IndexOf(neuron) }, new double[] { potentialNeurons.IndexOf(bmu) });
 
                 double widthSq = neighbourhoodRadius * neighbourhoodRadius;
 
@@ -147,7 +151,8 @@ public class Network
             }
 
             learningRate = startingLearningRate * Math.Exp(-(double)i / epochs);
-            DisplayData(i);
+            //DisplayData(i);
+            PlotVector();
         }
     }
 
@@ -155,8 +160,8 @@ public class Network
     {
         if (Helper.Plot)
         {
-            Helper.PlotPoints(GetNeuronsPositions(), 
-                string.Format("title sprintf('epoch={0}') lc rgb 'red', '{1}shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'", epoch,Helper.outputPath));
+            Helper.PlotPoints(GetNeuronsPositions(),
+                $"title sprintf('epoch={epoch}') lc rgb 'red', '{Helper.outputPath}shape.txt' using 1:2 title 'shape' with points pt '+' lc rgb 'black'");
         }
 
         double error = CalculateError();
@@ -177,6 +182,33 @@ public class Network
         {
             neuron.Used = false;
         }
+    }
+
+    string text = "";
+
+    private void PlotVector()
+    {
+        if (!Helper.Plot) return;
+
+        if (!File.Exists(Helper.outputPath + "vectors.txt"))
+        {
+            using (var fs = File.Create(Helper.outputPath + "vectors.txt")) { }
+        }
+
+        foreach (var neuron in neurons)
+        {
+            if (neuron.PreviousWeights.Count == neuron.Weights.Count)
+            {
+                text +=
+                    $"{neuron.PreviousWeights[0]} {neuron.PreviousWeights[1]} {neuron.Weights[0]} {neuron.Weights[1]}\r\n";
+            }
+        }
+
+        using (var stream = File.CreateText(Helper.outputPath + "vectors.txt"))
+        {
+            stream.Write(text);
+        }
+        GnuPlot.Plot(Helper.outputPath + "vectors.txt", $" using 1:2:($3-$1):($4-$2) with vectors head filled lt 2 lc rgb 'red', '{Helper.outputPath + "shape.txt"}' using 1:2 title 'shape' with points pt '+' lc rgb 'black'");
     }
 
     private double CalculateError()

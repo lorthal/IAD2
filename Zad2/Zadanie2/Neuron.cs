@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 public class Neuron
 {
     public List<double> Weights { get; }
+    public List<double> PreviousWeights { get; private set; }
 
     public Point Position { get; private set; }
 
@@ -20,12 +22,14 @@ public class Neuron
     {
         Used = false;
         Weights = new List<double>();
+        PreviousWeights = new List<double>();
         Position = position;
         Coord = coord;
         Potential = 1;
         this.minPotential = minPotential;
 
         Weights.AddRange(Position.ToArray());
+        PreviousWeights.AddRange(Weights);
     }
 
     public double GetDistance(Point point)
@@ -36,11 +40,12 @@ public class Neuron
     public void UpdataWeights(Point point, double learningRate, double influence)
     {
         Used = true;
-        double[] prevWeights = Weights.ToArray();
+        PreviousWeights.Clear();
+        PreviousWeights.AddRange(Weights);
 
         for (int i = 0; i < Weights.Count; i++)
         {
-            Weights[i] = prevWeights[i] + influence * learningRate * (point.ToArray()[i] - prevWeights[i]);
+            Weights[i] = PreviousWeights[i] + influence * learningRate * (point.ToArray()[i] - PreviousWeights[i]);
         }
         Position = new Point(Weights[0], Weights[1]);
     }

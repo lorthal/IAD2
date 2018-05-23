@@ -23,7 +23,7 @@ public class Helper
 
     public const string outputPath = "D:\\Semestr 6\\IAD\\Zad2Res\\";
     public static string outputFilename = "output.txt";
-    public static bool Plot = false;
+    public static bool Plot = true;
 
     public static List<Point> ShapePoints = new List<Point>();
 
@@ -169,10 +169,10 @@ public class Helper
         }
         return points;
     }
-
+    static Random r = new Random();
     public static Point GenerateRandomPoint(double min, double max)
     {
-        Random r = new Random();
+        
         Point point = new Point(r.NextDouble(min, max), r.NextDouble(min, max));
 
         return point;
